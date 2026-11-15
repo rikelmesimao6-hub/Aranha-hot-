@@ -66,7 +66,7 @@ function frame(now){const dt=Math.min((now-last)/1000,.04);last=now;time+=dt;ctx
  if(spider.target){const dx=spider.target.x-spider.x,dy=spider.target.y-spider.y,d=Math.max(1,Math.hypot(dx,dy));spider.vx+=(dx/d*72-spider.vx)*dt*2.8;spider.vy+=(dy/d*72-spider.vy)*dt*2.8;spider.x+=spider.vx*dt;spider.y+=spider.vy*dt;spider.angle=Math.atan2(spider.vy,spider.vx)}
  threads.forEach(t=>{t.life-=dt;ctx.globalAlpha=Math.max(0,t.life/2.8);line(t.a,t.b,t.color,.85)});ctx.globalAlpha=1;for(let i=threads.length-1;i>=0;i--)if(threads[i].life<=0)threads.splice(i,1);
  glitches.forEach(g=>{g.life-=dt;if(g.life<=0)g.el.classList.remove('touched')});for(let i=glitches.length-1;i>=0;i--)if(glitches[i].life<=0)glitches.splice(i,1);
- legs.forEach(drawLeg);drawSpider();requestAnimationFrame(frame)}
+ drawSpider();requestAnimationFrame(frame)}
 newTarget();requestAnimationFrame(frame);
 })();
 </script></html>
