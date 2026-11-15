@@ -9,83 +9,91 @@ st.set_page_config(page_title="Spider Hot", page_icon="🕷️", layout="wide")
 st.title("🕷️ Spider Hot")
 st.subheader("Crawler de palavras-chave e tendências")
 
-st.markdown("""
+crawler_html = r"""
+<!doctype html><html lang="pt-br"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-.spider-stage{position:relative;height:390px;overflow:hidden;border:1px solid #22283a;border-radius:12px;
-background:#050609;color:#c7c8d1;margin:12px 0 18px;font-family:Georgia,serif}
-.docline{position:absolute;left:3%;right:3%;height:18px;white-space:nowrap;overflow:hidden;
-font-size:12px;line-height:18px;color:#aaa9b7;opacity:.9}
-.d1{top:22px}.d2{top:50px}.d3{top:78px}.d4{top:106px}.d5{top:134px}
-.d6{top:162px}.d7{top:190px}.d8{top:218px}.d9{top:246px}.d10{top:274px}
-.d11{top:302px}.d12{top:330px}.d13{top:358px}
-.hl{position:absolute;height:17px;border-radius:1px;opacity:.88;mix-blend-mode:screen;
-box-shadow:0 0 8px currentColor;animation:hlpulse 2.8s ease-in-out infinite alternate}
-.pink{background:#ed00b8;color:#ed00b8}.blue{background:#168fff;color:#168fff}
-.violet{background:#762cff;color:#762cff}.yellow{background:#e8c52e;color:#e8c52e}
-.h1{top:47px;left:28%;width:44%}.h2{top:103px;left:8%;width:37%;animation-delay:.5s}
-.h3{top:158px;left:53%;width:35%;animation-delay:1s}.h4{top:215px;left:22%;width:48%;animation-delay:1.4s}
-.h5{top:272px;left:57%;width:31%;animation-delay:.8s}.h6{top:327px;left:5%;width:29%;animation-delay:1.8s}
-@keyframes hlpulse{from{opacity:.42}to{opacity:.95}}
-.spider-svg{position:absolute;left:42%;top:35%;width:115px;height:115px;z-index:4;
-filter:drop-shadow(0 0 5px #9b38ff);animation:crawlpath 8s ease-in-out infinite alternate}
-@keyframes crawlpath{0%{transform:translate(-85px,-28px) rotate(-18deg)}
-24%{transform:translate(18px,4px) rotate(13deg)}
-52%{transform:translate(112px,-18px) rotate(-12deg)}
-78%{transform:translate(32px,54px) rotate(17deg)}
-100%{transform:translate(-72px,20px) rotate(-8deg)}}
-.leg{fill:none;stroke:#9b8acb;stroke-width:2;stroke-linecap:round;transform-box:fill-box;transform-origin:50% 50%;animation:step .24s ease-in-out infinite alternate}
-.leg:nth-child(even){animation-delay:.12s}
-@keyframes step{to{transform:rotate(17deg) translateY(-3px)}}
-.body{fill:#101019;stroke:#b7a5e9;stroke-width:1.6}
-.eye{fill:#ff42d4;filter:drop-shadow(0 0 3px #ff00c8)}
-.thread{position:absolute;z-index:3;left:49%;top:43%;width:2px;height:110px;
-background:linear-gradient(transparent,#b69cff,transparent);transform:rotate(27deg);
-transform-origin:top;opacity:.85;animation:threadmove 2s ease-in-out infinite alternate}
-@keyframes threadmove{to{transform:rotate(-22deg) scaleY(.72)}}
-.trace{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.trace path{fill:none;stroke:#a58bff;stroke-width:1;opacity:.38;stroke-dasharray:3 5;animation:dash 7s linear infinite}
-@keyframes dash{to{stroke-dashoffset:-90}}
-.stage-label{position:absolute;right:12px;top:9px;z-index:5;font:10px monospace;color:#9b8bcb;letter-spacing:1px}
-@media(max-width:600px){.spider-stage{height:360px}.docline{font-size:10px}.spider-svg{left:34%;width:105px;height:105px}}
+*{box-sizing:border-box}html,body{margin:0;background:#050609;color:#b9bdca;font:11px/1.55 Georgia,serif;overflow:hidden}
+#page{height:430px;overflow:hidden;padding:12px 12px 25px;column-count:2;column-gap:22px}
+.entry{break-inside:avoid;margin:0 0 8px}.word{display:inline}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.hit{outline:1px solid #ff28d7;background:rgba(255,25,205,.16);color:#ff7be6}
+@media(max-width:560px){#page{column-count:1;padding:10px 9px}.entry{font-size:10px}}
 </style>
-<div class="spider-stage">
-<div class="stage-label">SPIDER HOT // WEB CRAWLER</div>
-<div class="docline d1">[102] Smith, J. &amp; Brown, K. Digital networks and information retrieval — journal of web systems...</div>
-<div class="docline d2">A crawler follows links, reads page structure and indexes relevant terms for later analysis.</div>
-<div class="docline d3">[103] Web data extraction and semantic search. International Review of Computer Science, 2024.</div>
-<div class="docline d4">Keywords detected: social media, creator trends, audience signals, public metadata, discovery...</div>
-<div class="docline d5">[104] Machine learning methods for ranking documents and identifying recurring phrases.</div>
-<div class="docline d6">The indexing process stores page references and matches terms against the search query.</div>
-<div class="docline d7">[105] Arachnid-inspired navigation systems and distributed web crawling architectures.</div>
-<div class="docline d8">Public sources // page scan // text recognition // keyword frequency // link graph</div>
-<div class="docline d9">[106] Data collection should respect access permissions, privacy and website terms of service.</div>
-<div class="docline d10">Detected phrase: trending topics — relevance score — source reference — indexed result.</div>
-<div class="docline d11">[107] Network analysis, information retrieval and automated document classification.</div>
-<div class="docline d12">Crawler status: traversing visible text ... following permitted links ... extracting terms ...</div>
-<div class="docline d13">Spider Hot // keyword map // public web signals // analysis engine</div>
-<div class="hl pink h1"></div><div class="hl blue h2"></div><div class="hl violet h3"></div>
-<div class="hl pink h4"></div><div class="hl yellow h5"></div><div class="hl blue h6"></div>
-<svg class="trace" viewBox="0 0 800 390" preserveAspectRatio="none">
-<path d="M400 180L210 45L620 65L130 260L690 300L400 180M400 180L80 120L720 190L400 180"/>
-<path d="M400 180Q260 75 130 190T400 180Q560 80 690 190T400 180"/>
-</svg>
-<div class="thread"></div>
-<div class="spider-svg">
-<svg viewBox="0 0 120 120" width="100%" height="100%" aria-label="Aranha robótica rastejando sobre texto">
-<g>
-<path class="leg" d="M49 46L31 31L14 37L5 25"/><path class="leg" d="M46 55L25 49L10 61L2 57"/>
-<path class="leg" d="M47 66L27 77L17 92L6 96"/><path class="leg" d="M52 74L42 94L46 109L38 116"/>
-<path class="leg" d="M71 46L89 31L106 37L115 25"/><path class="leg" d="M74 55L95 49L110 61L118 57"/>
-<path class="leg" d="M73 66L93 77L103 92L114 96"/><path class="leg" d="M68 74L78 94L74 109L82 116"/>
-</g>
-<ellipse class="body" cx="60" cy="64" rx="15" ry="21"/>
-<ellipse class="body" cx="60" cy="37" rx="11" ry="10"/>
-<circle class="eye" cx="55" cy="35" r="2"/><circle class="eye" cx="65" cy="35" r="2"/>
-<path d="M53 27L48 20M67 27L72 20" stroke="#b7a5e9" stroke-width="1.4"/>
-</svg>
-</div>
-</div>
-""", unsafe_allow_html=True)
+<main id="page"></main><canvas id="fx"></canvas>
+<script>
+(()=>{
+const page=document.getElementById('page'),cv=document.getElementById('fx'),ctx=cv.getContext('2d');
+const samples=[
+'Network discovery and automated information retrieval across public web documents.',
+'Social media trends and audience signals in short-form video platforms.',
+'Semantic indexing, keyword frequency and topic classification for digital content.',
+'Public metadata can reveal recurring subjects, links and related search terms.',
+'Content analysis combines captions, hashtags and engagement indicators.',
+'Automated crawlers navigate permitted pages and record useful references.',
+'Search systems rank documents according to relevance, freshness and context.',
+'Digital publishing, creators, community growth and online discovery patterns.',
+'Machine learning methods for clustering phrases and identifying emerging topics.',
+'Web architecture, link graphs and distributed information systems.'
+];
+for(let i=0;i<45;i++){
+ const p=document.createElement('div');p.className='entry';
+ const lead=document.createElement('span');lead.textContent=(i+1)+'. ';
+ p.appendChild(lead);
+ const sentence=samples[i%samples.length]+' '+samples[(i*3+2)%samples.length];
+ sentence.split(/(\s+)/).forEach(part=>{if(!part.trim()){p.appendChild(document.createTextNode(part));return}
+ const s=document.createElement('span');s.className='word';s.textContent=part;p.appendChild(s)});
+ page.appendChild(p);
+}
+let W=0,H=0,D=1;
+function resize(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(D,0,0,D,0,0)}
+addEventListener('resize',resize);resize();
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const legs=Array.from({length:8},(_,i)=>({ang:(-150+i*42.85)*Math.PI/180,fx:0,fy:0,phase:i%2,step:0,from:null,to:null}));
+const spider={x:W*.5,y:H*.5,vx:0,vy:0,target:null,heading:0};
+const threads=[],extracts=[];let last=performance.now(),elapsed=0,tokenIndex=0;
+function choose(){const words=[...page.querySelectorAll('.word')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&r.top>0&&r.bottom<H});
+ if(!words.length)return;const el=words[Math.floor(Math.random()*words.length)],r=el.getBoundingClientRect();spider.target={x:r.left+r.width/2,y:r.top+r.height/2,el};}
+function line(x1,y1,x2,y2,c,w=1){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke()}
+function drawSpider(){
+ const s=spider,angle=s.heading;
+ ctx.save();ctx.translate(s.x,s.y);ctx.rotate(angle);
+ legs.forEach((L,i)=>{
+  const side=i<4?-1:1,idx=i%4,hipX=(idx-1.5)*5,hipY=side*3;
+  const base= L.ang, reach=24+idx*2;
+  const swing=Math.sin(elapsed*9+i*Math.PI)*5;
+  const fx=Math.cos(base)*reach+swing,fy=Math.sin(base)*reach;
+  const kneeX=hipX+fx*.48+(side*-9),kneeY=hipY+fy*.52;
+  line(hipX,hipY,kneeX,kneeY,'#8ddcff',1.5);line(kneeX,kneeY,fx,fy,'#5ab9ff',1.4);
+  ctx.beginPath();ctx.arc(kneeX,kneeY,1.7,0,Math.PI*2);ctx.fillStyle='#ff45d4';ctx.fill();
+ });
+ ctx.beginPath();ctx.ellipse(0,0,9,13,0,0,Math.PI*2);ctx.fillStyle='#11152b';ctx.fill();ctx.strokeStyle='#c1a2ff';ctx.lineWidth=1.5;ctx.stroke();
+ ctx.beginPath();ctx.arc(0,-12,7,0,Math.PI*2);ctx.fillStyle='#17152b';ctx.fill();ctx.stroke();
+ ctx.fillStyle='#ff40d5';ctx.shadowColor='#ff20d4';ctx.shadowBlur=8;ctx.beginPath();ctx.arc(-2,-13,1.5,0,7);ctx.arc(2,-13,1.5,0,7);ctx.fill();ctx.restore();
+}
+function animate(now){
+ const dt=Math.min((now-last)/1000,.04);last=now;elapsed+=dt;ctx.clearRect(0,0,W,H);
+ if(!spider.target||Math.hypot(spider.target.x-spider.x,spider.target.y-spider.y)<18){
+  if(spider.target?.el){const el=spider.target.el;el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),1500);
+   const r=el.getBoundingClientRect();extracts.push({x:r.left,y:r.top,text:el.textContent,life:1.7,color:Math.random()<.5?'#ff27d5':'#27bfff'});
+   if(threads.length>0){const p=threads[threads.length-1];threads.push({x1:p.x2,y1:p.y2,x2:spider.x,y2:spider.y,life:3})}
+   threads.push({x1:spider.x,y1:spider.y,x2:spider.target.x,y2:spider.target.y,life:3});
+  }choose();
+ }
+ if(spider.target){const dx=spider.target.x-spider.x,dy=spider.target.y-spider.y,d=Math.hypot(dx,dy)||1;
+  spider.vx+=(dx/d*85-spider.vx)*Math.min(1,dt*2.4);spider.vy+=(dy/d*85-spider.vy)*Math.min(1,dt*2.4);
+  spider.x+=spider.vx*dt;spider.y+=spider.vy*dt;spider.heading=Math.atan2(spider.vy,spider.vx);
+ }
+ threads.forEach(t=>{t.life-=dt;line(t.x1,t.y1,t.x2,t.y2,'rgba(180,80,255,'+Math.max(0,t.life/3*.6)+')',.8)});
+ for(let i=threads.length-1;i>=0;i--)if(threads[i].life<=0)threads.splice(i,1);
+ extracts.forEach(e=>{e.life-=dt;ctx.save();ctx.translate(e.x,e.y-(1.7-e.life)*22);ctx.rotate(-.12);ctx.globalAlpha=Math.max(0,e.life/1.7);ctx.fillStyle=e.color;ctx.fillRect(0,-12,Math.max(35,e.text.length*7),15);ctx.fillStyle='#050609';ctx.font='10px monospace';ctx.fillText(e.text,4,0);ctx.restore()});
+ for(let i=extracts.length-1;i>=0;i--)if(extracts[i].life<=0)extracts.splice(i,1);
+ drawSpider();requestAnimationFrame(animate);
+}
+choose();requestAnimationFrame(animate);
+})();
+</script></html>
+"""
+st.components.v1.html(crawler_html, height=440, scrolling=False)
 
 st.caption("A aranha agora tem uma animação inspirada no vídeo: pernas articuladas, teia, varredura e destaques neon. O movimento é visual; a análise real acontece nos dados abaixo.")
 
