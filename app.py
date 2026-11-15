@@ -3,6 +3,39 @@ from urllib.parse import quote
 
 st.set_page_config(page_title="Spider Hot", page_icon="🕷️", layout="wide")
 
+# Aranha animada atravessando a tela
+st.markdown("""
+<style>
+.spider-walker {
+    position: fixed;
+    left: -70px;
+    bottom: 16%;
+    z-index: 999999;
+    font-size: 42px;
+    line-height: 1;
+    pointer-events: none;
+    animation: spider-walk 14s linear infinite;
+}
+@keyframes spider-walk {
+    0%   { transform: translateX(0) translateY(0) rotate(-12deg); }
+    10%  { transform: translateX(10vw) translateY(-8px) rotate(8deg); }
+    20%  { transform: translateX(20vw) translateY(0) rotate(-8deg); }
+    30%  { transform: translateX(30vw) translateY(-8px) rotate(8deg); }
+    40%  { transform: translateX(40vw) translateY(0) rotate(-8deg); }
+    50%  { transform: translateX(50vw) translateY(-8px) rotate(8deg); }
+    60%  { transform: translateX(60vw) translateY(0) rotate(-8deg); }
+    70%  { transform: translateX(70vw) translateY(-8px) rotate(8deg); }
+    80%  { transform: translateX(80vw) translateY(0) rotate(-8deg); }
+    90%  { transform: translateX(90vw) translateY(-8px) rotate(8deg); }
+    100% { transform: translateX(calc(100vw + 70px)) translateY(0) rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spider-walker { animation: none; left: 12px; }
+}
+</style>
+<div class="spider-walker" aria-hidden="true">🕷️</div>
+""", unsafe_allow_html=True)
+
 st.title("🕷️ Spider Hot")
 st.subheader("Central de pesquisa de tendências do TikTok")
 
@@ -24,9 +57,7 @@ with col1:
     )
 with col2:
     if nicho.strip():
-        url_busca = (
-            "https://www.tiktok.com/search?q=" + quote(nicho.strip())
-        )
+        url_busca = "https://www.tiktok.com/search?q=" + quote(nicho.strip())
         st.link_button("Pesquisar este tema no TikTok", url_busca)
 
 st.info(
