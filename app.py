@@ -85,7 +85,7 @@ if st.button("🕸️ Analisar palavras-chave", type="primary"):
     if not texto.strip():
         st.warning("Cole algum texto ou hashtags primeiro.")
     else:
-        hashtags = re.findall(r"#[\\wÀ-ÿ]+", texto.lower(), flags=re.UNICODE)
+        hashtags = re.findall(r"#[\wÀ-ÿ]+", texto.lower(), flags=re.UNICODE)
         palavras = re.findall(r"[a-zA-ZÀ-ÿ0-9]{3,}", texto.lower())
         ignorar = {"para", "com", "uma", "que", "por", "dos", "das", "the", "and", "you", "this"}
         frequencia = Counter(p for p in palavras if p not in ignorar and not p.isdigit())
