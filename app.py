@@ -1,6 +1,13 @@
 import re
-from collections import Counter
-from urllib.parse import quote
+import ipaddress
+import socket
+import time
+import json
+from collections import Counter, deque
+from html.parser import HTMLParser
+from urllib.parse import urljoin, urlparse, urldefrag, quote
+from urllib.request import Request, build_opener, HTTPRedirectHandler
+from urllib.error import URLError, HTTPError
 
 import streamlit as st
 
@@ -82,12 +89,166 @@ st.components.v1.html(crawler_html, height=440, scrolling=False)
 
 st.caption("A aranha agora tem uma animação inspirada no vídeo: pernas articuladas, teia, varredura e destaques neon. O movimento é visual; a análise real acontece nos dados abaixo.")
 
+st.caption("A animação mostra a aranha explorando a tela. Abaixo, o rastreador Python visita páginas públicas autorizadas e extrai conteúdo real.")
+
+class PageParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.title_parts, self.text_parts, self.links = [], [], []
+        self.in_title = False
+        self.skip_depth = 0
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "title": self.in_title = True
+        if tag in ("script", "style", "noscript", "svg"):
+            self.skip_depth += 1
+        if tag == "a" and attrs.get("href"):
+            self.links.append(attrs["href"])
+    def handle_endtag(self, tag):
+        if tag == "title": self.in_title = False
+        if tag in ("script", "style", "noscript", "svg") and self.skip_depth:
+            self.skip_depth -= 1
+    def handle_data(self, data):
+        value = " ".join(data.split())
+        if not value: return
+        if self.in_title: self.title_parts.append(value)
+        if not self.skip_depth: self.text_parts.append(value)
+
+def public_http_url(url):
+    try:
+        p = urlparse(url)
+        if p.scheme not in ("http", "https") or not p.hostname or p.username or p.password:
+            return False
+        if p.port not in (None, 80, 443): return False
+        host = p.hostname.encode("idna").decode("ascii")
+        for item in socket.getaddrinfo(host, p.port or (443 if p.scheme == "https" else 80), type=socket.SOCK_STREAM):
+            ip = ipaddress.ip_address(item[4][0])
+            if not ip.is_global: return False
+        return True
+    except Exception:
+        return False
+
+class SafeRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urljoin(req.full_url, newurl)
+        if not public_http_url(target):
+            raise HTTPError(target, code, "Redirecionamento bloqueado por segurança", headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, target)
+
+def make_opener():
+    return build_opener(SafeRedirect())
+
+def fetch_bytes(opener, url, timeout=12, limit=5*1024*1024):
+    if not public_http_url(url):
+        raise ValueError("Endereço bloqueado: use um site público com HTTP ou HTTPS.")
+    req = Request(url, headers={"User-Agent": "SpiderHotCrawler/1.0 (rastreador educacional; contato pelo responsável do site)", "Accept": "text/html,*/*;q=0.8"})
+    with opener.open(req, timeout=timeout) as response:
+        final_url = response.geturl()
+        if not public_http_url(final_url):
+            raise ValueError("Destino final bloqueado por segurança.")
+        content_type = response.headers.get("Content-Type", "").lower()
+        if "text/html" not in content_type:
+            raise ValueError("A página não retornou HTML.")
+        data = response.read(limit + 1)
+        if len(data) > limit:
+            raise ValueError("Página maior que o limite de 5 MB.")
+        charset = response.headers.get_content_charset() or "utf-8"
+        return data.decode(charset, errors="replace"), final_url
+
+def crawl_site(start_url, max_pages, max_depth, delay):
+    start_url = urldefrag(start_url.strip())[0]
+    if not public_http_url(start_url):
+        raise ValueError("URL inválida ou endereço não público. Informe um site HTTP/HTTPS público.")
+    start_host = urlparse(start_url).hostname.lower()
+    opener = make_opener()
+    robots_cache = {}
+    visited, queue, pages, errors = set(), deque([(start_url, 0)]), [], []
+    while queue and len(pages) < max_pages:
+        url, depth = queue.popleft()
+        url = urldefrag(url)[0]
+        if url in visited: continue
+        visited.add(url)
+        parsed_url = urlparse(url)
+        host_key = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        if host_key not in robots_cache:
+            try:
+                robots_url = host_key + "/robots.txt"
+                if public_http_url(robots_url):
+                    req = Request(robots_url, headers={"User-Agent": "SpiderHotCrawler/1.0"})
+                    with opener.open(req, timeout=8) as resp:
+                        robots_text = resp.read(256000).decode("utf-8", errors="replace")
+                    from urllib.robotparser import RobotFileParser
+                    rp = RobotFileParser()
+                    rp.parse(robots_text.splitlines())
+                    robots_cache[host_key] = rp
+                else:
+                    robots_cache[host_key] = False
+            except Exception:
+                robots_cache[host_key] = False
+        rp = robots_cache[host_key]
+        if rp is False or not rp.can_fetch("SpiderHotCrawler", url):
+            errors.append(f"Bloqueada pelo robots.txt ou robots.txt indisponível: {url}")
+            continue
+        try:
+            html, final_url = fetch_bytes(opener, url)
+            parser = PageParser()
+            parser.feed(html)
+            title = " ".join(parser.title_parts).strip() or "(sem título)"
+            body = " ".join(parser.text_parts)
+            pages.append({"url": final_url, "title": title, "text": body[:30000], "depth": depth})
+            if depth < max_depth:
+                for href in parser.links:
+                    nxt = urldefrag(urljoin(final_url, href))[0]
+                    np = urlparse(nxt)
+                    if np.hostname and np.hostname.lower() == start_host and np.scheme in ("http", "https") and nxt not in visited:
+                        queue.append((nxt, depth + 1))
+        except Exception as exc:
+            errors.append(f"{url}: {str(exc)[:180]}")
+        time.sleep(delay)
+    return pages, errors
+
+with st.expander("🌐 Rastrear um site público", expanded=True):
+    st.write("O rastreador segue links do mesmo domínio, consulta o robots.txt e coleta somente páginas HTML. Não use em sites sem autorização.")
+    with st.form("spider_crawl_form"):
+        seed_url = st.text_input("Endereço inicial", placeholder="https://exemplo.com")
+        crawl_cols = st.columns(3)
+        max_pages = crawl_cols[0].selectbox("Máximo de páginas", [3, 5, 10, 15, 20], index=2)
+        max_depth = crawl_cols[1].selectbox("Profundidade", [0, 1, 2, 3], index=2)
+        delay = crawl_cols[2].selectbox("Pausa entre páginas", [1.0, 1.5, 2.0, 3.0], index=1)
+        run_crawl = st.form_submit_button("🕷️ Iniciar rastreamento", type="primary")
+    if run_crawl:
+        if not seed_url.strip():
+            st.warning("Digite o endereço de um site.")
+        else:
+            with st.spinner("A aranha está visitando as páginas permitidas..."):
+                try:
+                    found_pages, crawl_errors = crawl_site(seed_url, max_pages, max_depth, delay)
+                    st.session_state["spider_crawled_pages"] = found_pages
+                    st.session_state["spider_crawl_errors"] = crawl_errors
+                    st.success(f"Rastreamento concluído: {len(found_pages)} página(s) coletada(s).")
+                except Exception as exc:
+                    st.error(f"Não foi possível iniciar: {exc}")
+    if st.session_state.get("spider_crawled_pages"):
+        found_pages = st.session_state["spider_crawled_pages"]
+        st.subheader("Páginas encontradas")
+        st.dataframe([{"Título": p["title"], "URL": p["url"], "Nível": p["depth"], "Caracteres": len(p["text"])} for p in found_pages], use_container_width=True, hide_index=True)
+        crawler_text = "\\n".join(p["title"] + " " + p["text"] for p in found_pages)
+        st.download_button("Baixar resultados em JSONL", "\\n".join(json.dumps(p, ensure_ascii=False) for p in found_pages), file_name="spider-hot-resultados.jsonl", mime="application/x-ndjson")
+        st.session_state["spider_crawler_text"] = crawler_text
+        if st.session_state.get("spider_crawl_errors"):
+            with st.expander("Avisos do rastreamento"):
+                for err in st.session_state["spider_crawl_errors"][:10]:
+                    st.caption(err)
+
+
 st.header("1. Capturar palavras-chave")
 st.write("Cole legendas, hashtags ou descrições de conteúdos públicos que você tem autorização para analisar.")
 texto = st.text_area("Textos para analisar", height=160, placeholder="Ex.: #beleza #dicas ...")
 
+texto_rastreado = st.session_state.get("spider_crawler_text", "")
+texto_completo = (texto + "\\n" + texto_rastreado).strip()
 if st.button("🕸️ Analisar palavras-chave", type="primary"):
-    if not texto.strip():
+    if not texto_completo:
         st.warning("Cole algum texto ou hashtags primeiro.")
     else:
         hashtags = re.findall(r"#[\wÀ-ÿ]+", texto.lower(), flags=re.UNICODE)
