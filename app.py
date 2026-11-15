@@ -1,132 +1,83 @@
-import streamlit as st
+import re
+from collections import Counter
 from urllib.parse import quote
+
+import streamlit as st
 
 st.set_page_config(page_title="Spider Hot", page_icon="🕷️", layout="wide")
 
 st.title("🕷️ Spider Hot")
-st.subheader("Central de pesquisa de tendências do TikTok")
+st.subheader("Crawler de palavras-chave e tendências")
 
-# Cena animada: a aranha percorre palavras-chave e lança fios de teia.
 st.markdown("""
 <style>
-.web-scene {
-  position: relative; height: 300px; width: 100%; overflow: hidden;
-  border-radius: 18px; margin: 12px 0 24px;
-  background: radial-gradient(ellipse at 50% 45%, #18213b 0%, #090d19 62%, #05070d 100%);
-  border: 1px solid #293650;
-}
-.web-scene .web-lines { position:absolute; inset:0; width:100%; height:100%; opacity:.65; }
-.web-scene .web-lines path, .web-scene .web-lines line, .web-scene .web-lines circle {
-  fill:none; stroke:#31dfff; stroke-width:1.2; opacity:.65;
-}
-.keyword {
-  position:absolute; padding:8px 13px; border-radius:20px; color:#eafaff;
-  border:1px solid #31dfff; background:#101d31dd; font:600 13px sans-serif;
-  box-shadow:0 0 12px #1ccfff55; white-space:nowrap;
-}
-.k1 { left:7%; top:22%; animation: glow 2s infinite alternate; }
-.k2 { left:39%; top:13%; animation: glow 2s .5s infinite alternate; }
-.k3 { right:7%; top:29%; animation: glow 2s 1s infinite alternate; }
-.k4 { left:18%; bottom:17%; animation: glow 2s 1.5s infinite alternate; }
-.k5 { right:18%; bottom:14%; animation: glow 2s .8s infinite alternate; }
-.spider-runner {
-  position:absolute; left:-90px; top:43%; width:76px; height:76px; z-index:5;
-  animation: spider-route 13s linear infinite;
-  filter:drop-shadow(0 0 7px #27dfff) drop-shadow(0 0 12px #b94cff);
-}
-.spider-runner svg { width:100%; height:100%; overflow:visible; }
-.spider-runner path, .spider-runner ellipse, .spider-runner circle {
-  fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round;
-}
-.spider-runner .blue { stroke:#26e5ff; }
-.spider-runner .purple { stroke:#b66aff; }
-.spider-runner .pink { stroke:#ff4bc8; }
-.spider-runner .legs { transform-origin:50% 50%; animation: legs  .22s ease-in-out infinite alternate; }
-.spider-thread {
-  position:absolute; width:2px; height:110px; top:-110px; left:50%;
-  background:linear-gradient(transparent,#31e8ff,#bd63ff);
-  transform-origin:top; animation: thread-swing 2s ease-in-out infinite alternate;
-}
-@keyframes spider-route {
-  0% { transform:translateX(0) translateY(0) rotate(-8deg); }
-  20% { transform:translateX(22vw) translateY(-26px) rotate(7deg); }
-  40% { transform:translateX(44vw) translateY(22px) rotate(-7deg); }
-  60% { transform:translateX(66vw) translateY(-20px) rotate(7deg); }
-  80% { transform:translateX(88vw) translateY(18px) rotate(-7deg); }
-  100% { transform:translateX(calc(100vw + 110px)) translateY(0) rotate(7deg); }
-}
-@keyframes legs { from { transform:rotate(-9deg); } to { transform:rotate(9deg); } }
-@keyframes glow { from { box-shadow:0 0 5px #22dfff44; } to { box-shadow:0 0 18px #b84dffbb; border-color:#d26bff; } }
-@keyframes thread-swing { from { transform:rotate(-10deg); } to { transform:rotate(10deg); } }
-@media (prefers-reduced-motion: reduce) {
- .spider-runner,.spider-runner .legs,.keyword,.spider-thread { animation:none; }
-}
+.web-scene{position:relative;height:250px;overflow:hidden;border-radius:18px;
+background:radial-gradient(ellipse at center,#192641,#080c18 72%);
+border:1px solid #29415f;margin:12px 0 20px}
+.web-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.web-scene svg path,.web-scene svg circle{fill:none;stroke:#28dfff;stroke-width:1;opacity:.45}
+.crawler{position:absolute;top:42%;left:-75px;font-size:54px;
+filter:drop-shadow(0 0 9px #26dfff);animation:crawl 12s linear infinite}
+@keyframes crawl{0%{transform:translateX(0) translateY(0) rotate(-8deg)}
+25%{transform:translateX(25vw) translateY(-22px) rotate(8deg)}
+50%{transform:translateX(50vw) translateY(14px) rotate(-8deg)}
+75%{transform:translateX(75vw) translateY(-18px) rotate(8deg)}
+100%{transform:translateX(calc(100vw + 90px)) translateY(0) rotate(-8deg)}}
 </style>
-<div class="web-scene" aria-label="Animação de aranha digital capturando palavras-chave">
-<svg class="web-lines" viewBox="0 0 800 300" preserveAspectRatio="none">
- <path d="M400 0 L400 300 M0 150 L800 150 M100 0 L700 300 M700 0 L100 300"/>
- <path d="M400 150 Q300 80 200 150 Q300 220 400 150 Q500 80 600 150 Q500 220 400 150"/>
- <path d="M400 150 Q320 30 400 20 Q480 30 400 150 Q320 270 400 280 Q480 270 400 150"/>
- <circle cx="400" cy="150" r="45"/><circle cx="400" cy="150" r="90"/><circle cx="400" cy="150" r="135"/>
+<div class="web-scene">
+<svg viewBox="0 0 800 250" preserveAspectRatio="none">
+<path d="M400 0L400 250M0 125H800M100 0L700 250M700 0L100 250"/>
+<path d="M400 125Q250 20 100 125Q250 230 400 125Q550 20 700 125Q550 230 400 125"/>
+<circle cx="400" cy="125" r="45"/><circle cx="400" cy="125" r="90"/><circle cx="400" cy="125" r="135"/>
 </svg>
-<div class="keyword k1">#viral</div>
-<div class="keyword k2">#tendências</div>
-<div class="keyword k3">#TikTok</div>
-<div class="keyword k4">#criadores</div>
-<div class="keyword k5">#engajamento</div>
-<div class="spider-runner">
- <div class="spider-thread"></div>
- <svg viewBox="0 0 100 100">
-  <g class="legs pink">
-   <path d="M40 38 L23 24 L8 14 M37 48 L17 45 L4 54 M40 59 L22 73 L10 88 M45 65 L38 84 L43 98"/>
-  </g>
-  <g class="legs blue">
-   <path d="M60 38 L77 24 L92 14 M63 48 L83 45 L96 54 M60 59 L78 73 L90 88 M55 65 L62 84 L57 98"/>
-  </g>
-  <ellipse class="purple" cx="50" cy="57" rx="13" ry="19"/>
-  <ellipse class="blue" cx="50" cy="34" rx="10" ry="12"/>
-  <circle class="pink" cx="46" cy="32" r="2"/><circle class="pink" cx="54" cy="32" r="2"/>
- </svg>
-</div>
+<div class="crawler">🕷️</div>
 </div>
 """, unsafe_allow_html=True)
 
-st.caption("A animação é visual: as palavras mostradas são exemplos, não resultados coletados.")
+st.caption("A aranha animada é visual. A análise abaixo processa o texto público que você fornecer.")
 
-st.write(
-    "Use este painel para organizar suas pesquisas. "
-    "A consulta de tendências abre fontes públicas do TikTok."
-)
-st.divider()
+st.header("1. Capturar palavras-chave")
+st.write("Cole legendas, hashtags ou descrições de conteúdos públicos que você tem autorização para analisar.")
+texto = st.text_area("Textos para analisar", height=160, placeholder="Ex.: #beleza #dicas ...")
 
-st.header("🔎 Pesquisar tendências")
-nicho = st.text_input("Digite um tema, hashtag ou palavra-chave", "beleza")
-
-col1, col2 = st.columns(2)
-with col1:
-    st.link_button(
-        "Abrir tendências oficiais do TikTok",
-        "https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en"
-    )
-with col2:
-    if nicho.strip():
-        url_busca = "https://www.tiktok.com/search?q=" + quote(nicho.strip())
-        st.link_button("Pesquisar este tema no TikTok", url_busca)
-
-st.info(
-    "Esta versão abre fontes públicas para consulta. "
-    "Ela ainda não coleta métricas automaticamente nem acessa dados privados."
-)
-
-st.header("📋 Registro da pesquisa")
-tema = st.text_input("Tema que você está analisando", key="tema_registro")
-observacao = st.text_area("Anotações (ex.: hashtags, visualizações, formato do vídeo)")
-if st.button("Salvar anotação nesta sessão"):
-    if tema.strip() or observacao.strip():
-        st.success("Anotação registrada nesta sessão.")
-        st.write("**Tema:**", tema)
-        st.write("**Anotações:**", observacao)
+if st.button("🕸️ Analisar palavras-chave", type="primary"):
+    if not texto.strip():
+        st.warning("Cole algum texto ou hashtags primeiro.")
     else:
-        st.warning("Digite um tema ou uma anotação primeiro.")
+        hashtags = re.findall(r"#[\wÀ-ÿ]+", texto.lower(), flags=re.UNICODE)
+        palavras = re.findall(r"[a-zA-ZÀ-ÿ0-9]{3,}", texto.lower())
+        ignorar = {"para", "com", "uma", "que", "por", "dos", "das", "the", "and", "you", "this"}
+        frequencia = Counter(p for p in palavras if p not in ignorar and not p.isdigit())
+        st.session_state["spider_hashtags"] = Counter(hashtags)
+        st.session_state["spider_words"] = frequencia
+        st.success("Análise concluída!")
 
-st.caption("Spider Hot — versão inicial. Não insira senhas nem dados privados.")
+if "spider_hashtags" in st.session_state:
+    st.subheader("Hashtags encontradas")
+    hs = st.session_state["spider_hashtags"].most_common(15)
+    if hs:
+        st.dataframe([{"Hashtag": k, "Ocorrências": v} for k, v in hs], use_container_width=True, hide_index=True)
+    else:
+        st.info("Nenhuma hashtag encontrada no texto.")
+
+    st.subheader("Palavras mais frequentes")
+    ws = st.session_state["spider_words"].most_common(15)
+    if ws:
+        st.dataframe([{"Palavra-chave": k, "Ocorrências": v} for k, v in ws], use_container_width=True, hide_index=True)
+        termos = " ".join(k for k, _ in ws[:5])
+        st.link_button("Pesquisar palavras encontradas no TikTok", "https://www.tiktok.com/search?q=" + quote(termos))
+    else:
+        st.info("Não encontrei palavras suficientes para classificar.")
+
+st.divider()
+st.header("2. Consultar tendências públicas")
+st.link_button(
+    "Abrir TikTok Creative Center",
+    "https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en"
+)
+termo = st.text_input("Pesquisar um tema no TikTok", "beleza")
+if termo.strip():
+    st.link_button("Abrir pesquisa do tema", "https://www.tiktok.com/search?q=" + quote(termo.strip()))
+
+st.info("Limite desta versão: ela analisa o texto colado por você e abre fontes públicas. Não coleta vídeos ou métricas automaticamente.")
+st.caption("Spider Hot — análise de texto e hashtags. Use somente conteúdo público e autorizado.")
